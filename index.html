@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1730" />
+  <title>WeatherWhatIf | Weather Decision Assistant</title>
+  <style>
+    :root {
+      --navy: #0b1730; --ink: #17233c; --muted: #64718a; --line: #e2e8f2;
+      --paper: #f4f7fc; --white: #ffffff; --blue: #4263eb; --blue-dark: #2946c7;
+      --teal: #0f9f8f; --amber: #c47b08; --red: #d34242;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); background: var(--paper); }
+    .hero { background: radial-gradient(circle at 85% 5%, #294c91 0, transparent 35%), var(--navy); color: white; padding: 30px 20px 42px; }
+    .wrap { max-width: 1080px; margin: 0 auto; }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px; }
+    .brand-icon { display:grid; place-items:center; width:40px; height:40px; border-radius:13px; background:#ffffff1b; font-size:23px; }
+    .eyebrow { text-transform:uppercase; font-size:11px; letter-spacing:2px; color:#aabcf8; font-weight:800; margin-top:26px; }
+    h1 { font-size:clamp(30px,5vw,48px); line-height:1.08; margin:9px 0 12px; max-width:720px; }
+    .hero p { max-width:690px; color:#d3dcf2; line-height:1.65; margin:0; }
+    main { max-width:1080px; margin:-22px auto 40px; padding:0 20px; position:relative; }
+    .panel { background:var(--white); border:1px solid var(--line); border-radius:20px; padding:24px; box-shadow:0 12px 34px #17233c0c; }
+    .panel h2 { margin:0 0 5px; font-size:20px; }
+    .sub { color:var(--muted); font-size:13px; line-height:1.5; margin:0 0 20px; }
+    .fields { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
+    .field { display:flex; flex-direction:column; gap:7px; }
+    label { font-size:12px; color:#4e5c76; font-weight:750; }
+    input, select { width:100%; min-width:0; border:1px solid #d5ddec; border-radius:11px; padding:12px 11px; background:#fff; color:var(--ink); font:inherit; font-size:14px; outline:none; }
+    input:focus, select:focus { border-color:var(--blue); box-shadow:0 0 0 3px #4263eb1a; }
+    .actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:18px; }
+    button { border:0; border-radius:11px; padding:13px 18px; background:var(--blue); color:white; font-weight:800; cursor:pointer; font-size:14px; }
+    button:hover { background:var(--blue-dark); }
+    button:disabled { opacity:.6; cursor:wait; }
+    .small-note { color:var(--muted); font-size:12px; line-height:1.5; }
+    #status { margin-top:14px; font-size:13px; color:var(--muted); min-height:20px; }
+    #results { display:none; margin-top:20px; }
+    .result-head { display:flex; justify-content:space-between; align-items:flex-start; gap:15px; margin-bottom:15px; }
+    .result-head h2 { margin:0 0 5px; }
+    .location-line { color:var(--muted); font-size:13px; }
+    .compare { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .option { border:1px solid var(--line); border-radius:16px; padding:18px; background:#fff; }
+    .option.recommended { border:2px solid var(--teal); background:linear-gradient(180deg,#f0fffb,#fff 70%); }
+    .option-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .option h3 { margin:0 0 5px; font-size:17px; }
+    .time-label { font-size:12px; color:var(--muted); }
+    .pill { display:inline-block; padding:6px 9px; border-radius:999px; background:#eef2ff; color:#344bb4; font-size:11px; font-weight:800; white-space:nowrap; }
+    .pill.good { background:#dcf8ef; color:#087b68; }
+    .pill.mid { background:#fff1d5; color:#8c5b00; }
+    .pill.high { background:#ffe4e4; color:#a92727; }
+    .weather-main { display:flex; align-items:center; gap:12px; margin:20px 0 16px; }
+    .weather-icon { font-size:38px; }
+    .temp { font-size:32px; font-weight:850; letter-spacing:-1px; }
+    .condition { color:var(--muted); font-size:12px; margin-top:2px; }
+    .metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .metric { background:#f4f7fc; border-radius:11px; padding:11px 9px; }
+    .metric .k { color:var(--muted); font-size:10px; font-weight:750; text-transform:uppercase; letter-spacing:.5px; }
+    .metric .v { margin-top:5px; font-size:15px; font-weight:800; }
+    .score-row { display:flex; justify-content:space-between; gap:10px; margin-top:17px; font-size:12px; font-weight:750; }
+    .bar { height:7px; border-radius:999px; background:#e9eef6; margin-top:8px; overflow:hidden; }
+    .bar > div { height:100%; border-radius:999px; background:var(--teal); }
+    .option.risk-mid .bar > div { background:#e6a126; }
+    .option.risk-high .bar > div { background:var(--red); }
+    .recommendation { background:#edf9f6; border:1px solid #c8eee4; border-radius:15px; padding:17px 18px; margin-top:14px; }
+    .recommendation h3 { margin:0 0 6px; font-size:16px; }
+    .recommendation p { margin:0; line-height:1.6; font-size:13px; color:#315b55; }
+    .warning { background:#fff8e8; border:1px solid #f1dfb5; border-radius:14px; padding:14px 16px; margin-top:14px; color:#6e531d; font-size:12px; line-height:1.6; }
+    .section-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px; }
+    .info-card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:19px; }
+    .info-card h3 { margin:0 0 8px; font-size:15px; }
+    .info-card p, .info-card li { color:var(--muted); font-size:12px; line-height:1.65; }
+    .info-card ul { padding-left:18px; margin:8px 0 0; }
+    footer { max-width:1080px; margin:0 auto; padding:0 20px 28px; color:var(--muted); font-size:11px; line-height:1.6; }
+    .error { color:#b42323 !important; }
+    @media (max-width:800px) { .fields { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:560px) {
+      .hero { padding:23px 16px 38px; } main { padding:0 12px; } .panel { padding:17px; }
+      .fields, .compare, .section-grid { grid-template-columns:1fr; }
+      .result-head { display:block; } .result-head .pill { margin-top:8px; }
+      .metrics { gap:6px; } .metric { padding:10px 7px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <div class="brand"><div class="brand-icon">☀</div><span>WeatherWhatIf</span></div>
+      <div class="eyebrow">Weather information & decision assistant</div>
+      <h1>Make plans with the weather in mind.</h1>
+      <p>Compare two possible time slots for your activity. WeatherWhatIf uses forecast data and clear, rule-based scoring to help you identify the comparatively lower-risk option.</p>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel" aria-labelledby="input-heading">
+      <h2 id="input-heading">Compare your plans</h2>
+      <p class="sub">Enter a place and two times on the same date. Forecast availability depends on the selected date and location.</p>
+      <div class="fields">
+        <div class="field">
+          <label for="location">Location / city</label>
+          <input id="location" value="Chennai" placeholder="e.g. Chennai" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="date">Date</label>
+          <input id="date" type="date" />
+        </div>
+        <div class="field">
+          <label for="activity">Activity</label>
+          <select id="activity">
+            <option value="outdoor">Outdoor event</option>
+            <option value="travel">Travel</option>
+            <option value="sports">Outdoor sports</option>
+            <option value="commute">Daily commute</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="timeA">Option A time</label>
+          <select id="timeA"></select>
+        </div>
+        <div class="field">
+          <label for="timeB">Option B time</label>
+          <select id="timeB"></select>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="compareBtn" type="button">Compare weather options</button>
+        <span class="small-note">Live forecast data via Open-Meteo · No API key required for this demo</span>
+      </div>
+      <div id="status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section id="results" aria-live="polite">
+      <div class="panel">
+        <div class="result-head">
+          <div><h2>Your weather comparison</h2><div class="location-line" id="resultLocation"></div></div>
+          <span class="pill" id="activityPill"></span>
+        </div>
+        <div class="compare">
+          <article class="option" id="cardA"></article>
+          <article class="option" id="cardB"></article>
+        </div>
+        <div class="recommendation" id="recommendation"></div>
+        <div class="warning"><strong>Important limitation:</strong> This prototype uses forecast variables and illustrative decision rules. It does not currently retrieve or verify live India Meteorological Department (IMD) warnings. Forecasts can change; check official alerts and local conditions before making safety-critical decisions. A lower score is not a guarantee of safety.</div>
+      </div>
+    </section>
+
+    <div class="section-grid">
+      <section class="info-card">
+        <h3>How the decision engine works</h3>
+        <p>It checks precipitation probability, expected rainfall, wind speed, temperature, and thunderstorm-related weather codes. Activity-specific weights produce a transparent 0–100 risk indicator. The lower score is treated as the comparatively better option.</p>
+        <ul>
+          <li>Input validation before the request</li>
+          <li>Geocoding and hourly forecast retrieval</li>
+          <li>Rule-based comparison with an explanation</li>
+          <li>Clear notice when data is unavailable</li>
+        </ul>
+      </section>
+      <section class="info-card">
+        <h3>Prototype scope</h3>
+        <p>This is a front-end demonstration that can be hosted on GitHub Pages. It uses the Open-Meteo public API from the browser. It does not include a Flask backend, persistent data storage, or verified official-warning integration.</p>
+        <p>For a full deployment, add backend validation, more extensive testing, source monitoring, and official warning integration where reliable access is available.</p>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    WeatherWhatIf · ACCI-SENCE team prototype. Weather data: Open-Meteo
+    (<a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener noreferrer">API documentation</a>).
+    Official weather information: <a href="https://mausam.imd.gov.in/" target="_blank" rel="noopener noreferrer">India Meteorological Department</a>.
+    This tool is for planning support and educational demonstration, not emergency guidance.
+  </footer>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const dateInput = $("date");
+  const now = new Date();
+  const localToday = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+  dateInput.value = localToday;
+  dateInput.min = localToday;
+
+  // Build 24-hour time choices.
+  for (let hour = 0; hour < 24; hour++) {
+    const value = `${String(hour).padStart(2,"0")}:00`;
+    const label = new Date(2000,0,1,hour).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
+    for (const id of ["timeA","timeB"]) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      $(id).appendChild(option);
+    }
+  }
+  $("timeA").value = "09:00";
+  $("timeB").value = "17:00";
+
+  const activityNames = {
+    outdoor: "Outdoor event", travel: "Travel", sports: "Outdoor sports", commute: "Daily commute"
+  };
+  const weatherDescriptions = {
+    0:["Clear sky","☀️"], 1:["Mainly clear","🌤️"], 2:["Partly cloudy","⛅"], 3:["Overcast","☁️"],
+    45:["Fog","🌫️"], 48:["Depositing rime fog","🌫️"],
+    51:["Light drizzle","🌦️"], 53:["Moderate drizzle","🌦️"], 55:["Dense drizzle","🌧️"],
+    56:["Light freezing drizzle","🌧️"], 57:["Dense freezing drizzle","🌧️"],
+    61:["Slight rain","🌦️"], 63:["Moderate rain","🌧️"], 65:["Heavy rain","🌧️"],
+    66:["Light freezing rain","🌧️"], 67:["Heavy freezing rain","🌧️"],
+    71:["Slight snow","🌨️"], 73:["Moderate snow","🌨️"], 75:["Heavy snow","❄️"], 77:["Snow grains","🌨️"],
+    80:["Slight rain showers","🌦️"], 81:["Moderate rain showers","🌧️"], 82:["Violent rain showers","⛈️"],
+    85:["Slight snow showers","🌨️"], 86:["Heavy snow showers","❄️"],
+    95:["Thunderstorm","⛈️"], 96:["Thunderstorm with hail","⛈️"], 99:["Thunderstorm with heavy hail","⛈️"]
+  };
+
+  function setStatus(message, isError=false) {
+    $("status").textContent = message;
+    $("status").className = isError ? "error" : "";
+  }
+  function explainCode(code) {
+    return weatherDescriptions[Number(code)] || ["Unknown conditions","🌡️"];
+  }
+  function riskFor(w, activity) {
+    let score = 0;
+    const reasons = [];
+    const rainProb = Number(w.precipitation_probability ?? 0);
+    const rain = Number(w.precipitation ?? 0);
+    const wind = Number(w.wind_speed_10m ?? 0);
+    const temp = Number(w.temperature_2m ?? 0);
+    const code = Number(w.weather_code);
+    const storm = [95,96,99].includes(code);
+
+    const weights = activity === "travel"
+      ? {rainProb:0.20, rain:0.20, wind:0.25, temp:0.10, storm:0.25}
+      : activity === "commute"
+      ? {rainProb:0.25, rain:0.20, wind:0.20, temp:0.10, storm:0.25}
+      : activity === "sports"
+      ? {rainProb:0.25, rain:0.20, wind:0.15, temp:0.20, storm:0.20}
+      : {rainProb:0.25, rain:0.20, wind:0.20, temp:0.15, storm:0.20};
+
+    score += Math.min(100, rainProb * 1.4) * weights.rainProb;
+    score += Math.min(100, rain * 20) * weights.rain;
+    score += Math.min(100, wind * 2) * weights.wind;
+    score += Math.max(0, Math.min(100, (temp - 24) * 7)) * weights.temp;
+    if (storm) score += 100 * weights.storm;
+
+    if (rainProb >= 50) reasons.push(`rain probability is ${rainProb}%`);
+    if (rain >= 1) reasons.push(`expected precipitation is ${rain.toFixed(1)} mm`);
+    if (wind >= 25) reasons.push(`wind speed is ${wind.toFixed(0)} km/h`);
+    if (temp >= 35) reasons.push(`temperature is ${temp.toFixed(1)}°C`);
+    if (storm) reasons.push("a thunderstorm-related weather code is forecast");
+    if (!reasons.length) reasons.push("the selected forecast hour has no major signal in the rules used here");
+    score = Math.round(Math.max(0, Math.min(100, score)));
+    return {score, reasons};
+  }
+  function riskLabel(score) {
+    if (score < 30) return ["Lower indicator","good","risk-low"];
+    if (score < 60) return ["Moderate indicator","mid","risk-mid"];
+    return ["Higher indicator","high","risk-high"];
+  }
+  function formatHour(hour) {
+    return new Date(`2000-01-01T${hour}:00`).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
+  }
+  function renderCard(id, label, date, hour, w, activity) {
+    const card = $(id);
+    const [description, icon] = explainCode(w.weather_code);
+    const {score, reasons} = riskFor(w, activity);
+    const [riskText, pillClass, riskClass] = riskLabel(score);
+    card.className = `option ${riskClass}`;
+    card.dataset.score = score;
+    card.innerHTML = `
+      <div class="option-top">
+        <div><h3>${label}</h3><div class="time-label">${date} · ${formatHour(hour)}</div></div>
+        <span class="pill ${pillClass}">${riskText}</span>
+      </div>
+      <div class="weather-main">
+        <div class="weather-icon" aria-hidden="true">${icon}</div>
+        <div><div class="temp">${Number(w.temperature_2m).toFixed(1)}°C</div><div class="condition">${description}</div></div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="k">Rain chance</div><div class="v">${w.precipitation_probability ?? "—"}%</div></div>
+        <div class="metric"><div class="k">Rain amount</div><div class="v">${Number(w.precipitation ?? 0).toFixed(1)} mm</div></div>
+        <div class="metric"><div class="k">Wind</div><div class="v">${Number(w.wind_speed_10m ?? 0).toFixed(0)} km/h</div></div>
+      </div>
+      <div class="score-row"><span>Rule-based risk indicator</span><strong>${score}/100</strong></div>
+      <div class="bar"><div style="width:${score}%"></div></div>
+      <p class="small-note"><strong>What influenced it:</strong> ${reasons.join("; ")}.</p>`;
+    return {score, reasons, description};
+  }
+  async function getJSON(url) {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Weather service returned ${response.status}.`);
+    return response.json();
+  }
+  async function compare() {
+    const button = $("compareBtn");
+    const location = $("location").value.trim();
+    const date = dateInput.value;
+    const timeA = $("timeA").value;
+    const timeB = $("timeB").value;
+    const activity = $("activity").value;
+
+    if (!location) return setStatus("Enter a city or location to continue.", true);
+    if (!date) return setStatus("Choose a date to continue.", true);
+    if (timeA === timeB) return setStatus("Choose two different time slots to compare.", true);
+    if (date < localToday) return setStatus("Choose today or a future date.", true);
+
+    button.disabled = true;
+    $("results").style.display = "none";
+    setStatus("Finding the location and retrieving forecast data…");
+    try {
+      const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en&format=json`;
+      const geo = await getJSON(geoUrl);
+      if (!geo.results || !geo.results.length) throw new Error("Location not found. Try a city name such as Chennai or Coimbatore.");
+      const place = geo.results[0];
+
+      const forecastUrl = new URL("https://api.open-meteo.com/v1/forecast");
+      forecastUrl.search = new URLSearchParams({
+        latitude: place.latitude,
+        longitude: place.longitude,
+        hourly: "temperature_2m,precipitation_probability,precipitation,wind_speed_10m,weather_code",
+        forecast_days: "7",
+        timezone: "auto",
+        temperature_unit: "celsius",
+        wind_speed_unit: "kmh"
+      }).toString();
+      const forecast = await getJSON(forecastUrl.toString());
+      const indexFor = (time) => forecast.hourly.time.indexOf(`${date}T${time}`);
+      const indexA = indexFor(timeA), indexB = indexFor(timeB);
+      if (indexA < 0 || indexB < 0) {
+        throw new Error("Forecast data is not available for that date/time. This demo currently requests a forecast of up to 7 days; try a date within that range.");
+      }
+      const weatherAt = (i) => ({
+        temperature_2m: forecast.hourly.temperature_2m[i],
+        precipitation_probability: forecast.hourly.precipitation_probability?.[i],
+        precipitation: forecast.hourly.precipitation[i],
+        wind_speed_10m: forecast.hourly.wind_speed_10m[i],
+        weather_code: forecast.hourly.weather_code[i]
+      });
+      const wA = weatherAt(indexA), wB = weatherAt(indexB);
+      const resultA = renderCard("cardA", "Option A", date, timeA, wA, activity);
+      const resultB = renderCard("cardB", "Option B", date, timeB, wB, activity);
+      let winner = "tie";
+      if (resultA.score < resultB.score) winner = "A";
+      if (resultB.score < resultA.score) winner = "B";
+      if (winner === "A") $("cardA").classList.add("recommended");
+      if (winner === "B") $("cardB").classList.add("recommended");
+
+      $("resultLocation").textContent = `${place.name}${place.admin1 ? ", " + place.admin1 : ""}${place.country ? ", " + place.country : ""} · Forecast timezone: ${forecast.timezone || "local"}`;
+      $("activityPill").textContent = activityNames[activity];
+      const recommendation = $("recommendation");
+      if (winner === "tie") {
+        recommendation.innerHTML = `<h3>Both options have the same score</h3><p>Both time slots scored ${resultA.score}/100 under the current rules. Compare the individual weather details and check official alerts before deciding.</p>`;
+      } else {
+        const chosen = winner === "A" ? timeA : timeB;
+        const other = winner === "A" ? timeB : timeA;
+        const best = winner === "A" ? resultA : resultB;
+        const next = winner === "A" ? resultB : resultA;
+        const diff = next.score - best.score;
+        recommendation.innerHTML = `<h3>Comparatively lower-risk option: ${winner} · ${formatHour(chosen)}</h3><p>Option ${winner} has a rule-based score of ${best.score}/100, which is ${diff} point${diff === 1 ? "" : "s"} lower than the other slot (${next.score}/100). This is based on the forecast variables shown above, not a guarantee that conditions will be safe. Check official warnings before making your final decision.</p>`;
+      }
+      $("results").style.display = "block";
+      setStatus("Comparison complete. Forecast values and scores are shown above.");
+    } catch (error) {
+      setStatus(error.message || "Something went wrong while retrieving the forecast. Please try again.", true);
+    } finally {
+      button.disabled = false;
+    }
+  }
+  $("compareBtn").addEventListener("click", compare);
+</script>
+</body>
+</html>
